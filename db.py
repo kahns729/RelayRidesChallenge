@@ -11,7 +11,7 @@ def main(argv):
 		command = line.split(" ")
 
 		result = db.handle_command(command[0], command[1:])
-		if result:
+		if result != None:
 			print result
 		line = sys.stdin.readline().rstrip()
 

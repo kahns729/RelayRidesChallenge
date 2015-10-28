@@ -6,6 +6,7 @@ class Database:
 		self.db = {}
 		# A stack of transaction blocks
 		self.transactions = deque()
+		self.values = {}
 
 
 	# Class method to handle command, and return the string result of
@@ -20,6 +21,7 @@ class Database:
 		elif cmd == "UNSET":
 			return self.unset(args, rollback)
 		elif cmd == "NUMEQUALTO":
+			# Cast to string in case of 0, which should still be printed
 			return self.numequalto(args)
 		elif cmd == "BEGIN":
 			return self.begin(args)
@@ -45,7 +47,19 @@ class Database:
 			# If record not in database
 			else:
 				self.transactions[-1].rollback_ops.append(("UNSET", [args[0]]))
+		# If a value is already in database
+		if args[0] in self.db:
+			# Decrement count of old value
+			dict_val = self.db[args[0]]
+			if dict_val in self.values:
+				self.values[dict_val] -= 1
+		# Store new value
 		self.db[args[0]] = args[1]
+		# Track the number equal to the new value
+		if args[1] in self.values:
+			self.values[args[1]] += 1
+		else:
+			self.values[args[1]] = 1
 		
 
 	def get(self, args):
@@ -63,8 +77,14 @@ class Database:
 			# Rollback should set value back to old value
 			rb_args = [args[0], self.db[args[0]]]
 			self.transactions[-1].rollback_ops.append(("SET", rb_args))
+		dict_val = self.db[args[0]]
+		if self.values.has_key(dict_val):
+			self.values[dict_val] -= 1
+
 		# Remove value from database
 		self.db.pop(args[0], "Could not remove " + args[0])
+
+		
 
 	def begin(self, args):
 		self.transactions.append(Transaction(self))
@@ -76,4 +96,13 @@ class Database:
 			return "NO TRANSACTION"
 
 	def commit(self, args):
-		self.transactions.clear()
+		if len(self.transactions) > 0:
+			self.transactions.clear()
+		else:
+			return "NO TRANSACTION"
+
+	def numequalto(self, args):
+		if args[0] in self.values:
+			return self.values[args[0]]
+		else:
+			return 0

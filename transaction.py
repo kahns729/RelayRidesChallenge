@@ -6,5 +6,4 @@ class Transaction:
 		self.db = db
 	def rollback(self):
 		for (cmd, args) in self.rollback_ops:
-			print(cmd, args)
 			self.db.handle_command(cmd, args, rollback=True)
